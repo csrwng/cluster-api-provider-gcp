@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"os"
 
 	"github.com/pkg/errors"
 
@@ -24,6 +25,7 @@ import (
 
 const (
 	credentialsSecretKey = "service_account.json"
+	projectIDEnvVar      = "GCP_PROJECT_ID"
 )
 
 // machineScopeParams defines the input parameters used to create a new MachineScope.
@@ -63,7 +65,7 @@ func newMachineScope(params machineScopeParams) (*machineScope, error) {
 		return nil, fmt.Errorf("failed to get serviceAccountJSON: %v", err)
 	}
 
-	projectID, err := getProjectIDFromJSONKey([]byte(serviceAccountJSON))
+	projectID, err := getProjectID([]byte(serviceAccountJSON))
 	if err != nil {
 		return nil, fmt.Errorf("error getting project from JSON key: %v", err)
 	}
@@ -157,6 +159,14 @@ func getCredentialsSecret(coreClient controllerclient.Client, machine machinev1.
 	}
 
 	return string(data), nil
+}
+
+func getProjectID(jsonKey []byte) (string, error) {
+	projectID := os.Getenv(projectIDEnvVar)
+	if len(projectID) > 0 {
+		return projectID, nil
+	}
+	return getProjectIDFromJSONKey(jsonKey)
 }
 
 func getProjectIDFromJSONKey(content []byte) (string, error) {
